@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tic Tac Toe · Blocky Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --pixel-display: 'Press Start 2P', monospace;
+      --pixel-body: 'VT323', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+
+      --sky-top: #6FB7F0;
+      --sky-bottom: #B8E0FF;
+      --cloud: #FFFFFF;
+      --grass-light: #6BBF59;
+      --grass-dark: #4FA340;
+      --dirt-light: #8B5A2B;
+      --dirt-dark: #5C3A1E;
+
+      --redstone: #D33C3C;
+      --emerald: #2EA86C;
+      --gold: #F2C744;
+      --iron: #C7CACC;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #6FB7F0;
+      font-family: var(--sans);
+      color: #E6E0F0;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    #root { width: 100%; height: 100%; }
+
+    svg.pixel, .pixel img, .pixel canvas {
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      shape-rendering: crispEdges;
+    }
+
+    .mc-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: var(--pixel-display);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: #FFFFFF;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.35);
+      padding: 14px 22px;
+      border: 0;
+      cursor: pointer;
+      user-select: none;
+      background: #6BBF59;
+      border-top: 3px solid #8FD97A;
+      border-left: 3px solid #8FD97A;
+      border-right: 3px solid #3E8C30;
+      border-bottom: 5px solid #3E8C30;
+      image-rendering: pixelated;
+      transition: transform 80ms ease;
+    }
+    .mc-btn:active { transform: translateY(2px); }
+    .mc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .mc-btn.secondary {
+      background: #8B8B8B;
+      border-top-color: #B8B8B8;
+      border-left-color: #B8B8B8;
+      border-right-color: #555;
+      border-bottom-color: #555;
+    }
+    .mc-btn.danger {
+      background: #C7423E;
+      border-top-color: #E07671;
+      border-left-color: #E07671;
+      border-right-color: #7E1F1C;
+      border-bottom-color: #7E1F1C;
+    }
+    .mc-btn.warm {
+      background: #E0A040;
+      border-top-color: #F4C474;
+      border-left-color: #F4C474;
+      border-right-color: #8A5C18;
+      border-bottom-color: #8A5C18;
+    }
+
+    .mc-panel {
+      background: #C6C6C6;
+      border-top: 4px solid #FFFFFF;
+      border-left: 4px solid #FFFFFF;
+      border-right: 4px solid #555555;
+      border-bottom: 4px solid #555555;
+      padding: 18px;
+    }
+    .mc-panel.dark {
+      background: #2E2A3C;
+      border-top-color: #4A4458;
+      border-left-color: #4A4458;
+      border-right-color: #14101F;
+      border-bottom-color: #14101F;
+      color: #E6E0F0;
+    }
+
+    .pixel-h1 {
+      font-family: var(--pixel-display);
+      font-weight: 400;
+      letter-spacing: 1px;
+      line-height: 1.4;
+      text-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+    }
+    .pixel-h2 {
+      font-family: var(--pixel-display);
+      font-size: 14px;
+      letter-spacing: 1px;
+      line-height: 1.4;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    }
+    .body-text {
+      font-family: var(--sans);
+      font-size: 13px;
+      letter-spacing: 0;
+      line-height: 1.5;
+    }
+    .label-mono {
+      font-family: var(--pixel-body);
+      font-size: 18px;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    @keyframes tilePop {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .tile-mark { animation: tilePop 280ms cubic-bezier(.2,1.4,.4,1); }
+
+    @keyframes fwBoom {
+      0% { transform: scale(0); opacity: 1; }
+      60% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .fw-particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      image-rendering: pixelated;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translate(0,0); }
+      20% { transform: translate(-2px, 1px); }
+      40% { transform: translate(2px, -1px); }
+      60% { transform: translate(-1px, 2px); }
+      80% { transform: translate(1px, -2px); }
+    }
+
+    @keyframes bannerIn {
+      0% { transform: scale(0.6) translateY(-12px); opacity: 0; }
+      60% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .heart-row { display: flex; gap: 4px; align-items: center; }
+
+    .mc-input {
+      font-family: var(--pixel-body);
+      font-size: 22px;
+      padding: 8px 12px;
+      background: #1A1722;
+      color: #E6E0F0;
+      border-top: 3px solid #14101F;
+      border-left: 3px solid #14101F;
+      border-right: 3px solid #4A4458;
+      border-bottom: 3px solid #4A4458;
+      outline: 0;
+      letter-spacing: 1px;
+      width: 100%;
+    }
+    .mc-input.light {
+      background: #FFFFFF;
+      color: #2A2438;
+      border-top-color: #888;
+      border-left-color: #888;
+      border-right-color: #FFF;
+      border-bottom-color: #FFF;
+    }
+    .mc-input:disabled { opacity: 0.65; }
+
+    .toggle {
+      display: inline-flex;
+      gap: 0;
+      font-family: var(--pixel-display);
+      font-size: 10px;
+    }
+    .toggle button {
+      padding: 8px 12px;
+      border: 0;
+      background: #555;
+      color: #BBB;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    .toggle button.active {
+      background: #6BBF59;
+      color: #FFF;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.35);
+    }
+
+    /* Centered, letterboxed game stage */
+    #stage-wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(180deg, #6FB7F0 0%, #9CCEF5 55%, #B8E0FF 100%);
+    }
+    #stage {
+      position: relative;
+      overflow: hidden;
+      transform-origin: center center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    }
+
+    /* Tweaks panel */
+    .tweaks-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 50;
+    }
+    .tweaks-panel {
+      position: fixed;
+      top: 58px;
+      right: 14px;
+      width: 248px;
+      z-index: 50;
+      background: #1A1722;
+      border-top: 3px solid #4A4458;
+      border-left: 3px solid #4A4458;
+      border-right: 3px solid #14101F;
+      border-bottom: 3px solid #14101F;
+      padding: 14px;
+      color: #E6E0F0;
+    }
+    .tweaks-panel .tw-section {
+      font-family: var(--pixel-display);
+      font-size: 9px;
+      color: #F2C744;
+      letter-spacing: 1px;
+      margin: 14px 0 8px;
+    }
+    .tweaks-panel .tw-section:first-child { margin-top: 0; }
+    .tweaks-panel label.tw-row {
+      display: block;
+      font-family: var(--pixel-body);
+      font-size: 17px;
+      color: #C9C3D8;
+      margin-bottom: 6px;
+    }
+    .tweaks-panel select, .tweaks-panel input[type=range] { width: 100%; }
+    .tweaks-panel select {
+      font-family: var(--pixel-body);
+      font-size: 16px;
+      padding: 6px 8px;
+      background: #2E2A3C;
+      color: #E6E0F0;
+      border: 2px solid #4A4458;
+    }
+    .tw-radio, .tw-toggle { display: flex; gap: 8px; }
+    .tw-chip {
+      flex: 1;
+      text-align: center;
+      font-family: var(--pixel-display);
+      font-size: 9px;
+      padding: 8px 6px;
+      background: #2E2A3C;
+      color: #9C97AC;
+      border: 2px solid #4A4458;
+      cursor: pointer;
+    }
+    .tw-chip.on {
+      background: #6BBF59;
+      color: #fff;
+      border-color: #3E8C30;
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+/* ─────────────────────────────────────────────────────────────────────────
+   Tic Tac Toe · Blocky Edition — Sunny Plains
+   Fully playable port of the "Sunny Plains" design direction.
+   ───────────────────────────────────────────────────────────────────────── */
+const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+const STAGE_W = 920;
+const STAGE_H = 690;
+const BEST_OF = 5;          // first to 3 round wins
+const START_HEARTS = 3;
+
+/* ── Pixel-art primitives (verbatim from design bundle) ─────────────────── */
+const PixelGrid = ({ rows, palette, size = 64, style = {} }) => {
+  const h = rows.length;
+  const w = rows[0].length;
+  const rects = [];
+  for (let y = 0; y < h; y++) {
+    const r = rows[y];
+    for (let x = 0; x < w; x++) {
+      const c = palette[r[x]];
+      if (c) rects.push(<rect key={y * 1000 + x} x={x} y={y} width={1} height={1} fill={c} />);
+    }
+  }
+  return (
+    <svg className="pixel" viewBox={`0 0 ${w} ${h}`} width={size} height={size}
+      shapeRendering="crispEdges"
+      style={{ display: 'block', imageRendering: 'pixelated', ...style }}>
+      {rects}
+    </svg>
+  );
+};
+
+const PICKAXE_ROWS = [
+  '............','.......hhHH.','......hhhhH.','.....hhhhH..','....hhhhH...',
+  '...hhhhH....','..ww.H......','.wwW........','wwW.........','wW..........',
+  '............','............',
+];
+const PICKAXE_PALETTE = { h: '#D5D9DC', H: '#7A8389', w: '#B5803F', W: '#6E4B23' };
+
+const SWORD_ROWS = [
+  '............','.......sS...','......ssS...','.....ssS....','....ssS.....',
+  '...ssS......','..ssS.......','.ggSg.......','..hhS.......','..bh........',
+  '.bb.........','............',
+];
+const SWORD_PALETTE = { s: '#E3EAF0', S: '#8C96A2', g: '#F2C744', h: '#7A4B1F', b: '#F2C744' };
+
+const HEART_ROWS = [
+  '............','.rR..RRr....','rRRRrRRRR...','RRRRRRRRR...','RRRRRRRRR...',
+  '.RRRRRRR....','..RRRRR.....','...RRR......','....R.......','............',
+  '............','............',
+];
+const HEART_PALETTE = { r: '#FF8A8A', R: '#D33C3C' };
+
+const HEART_EMPTY_ROWS = [
+  '............','.kk..kkk....','k..k.k..k...','k...k...k...','.k.....k....',
+  '..k...k.....','...k.k......','....k.......','............','............',
+  '............','............',
+];
+const HEART_EMPTY_PALETTE = { k: '#3A2A20' };
+
+const Pickaxe = ({ size = 64 }) => <PixelGrid rows={PICKAXE_ROWS} palette={PICKAXE_PALETTE} size={size} />;
+const Sword   = ({ size = 64 }) => <PixelGrid rows={SWORD_ROWS} palette={SWORD_PALETTE} size={size} />;
+const Heart   = ({ size = 24 }) => <PixelGrid rows={HEART_ROWS} palette={HEART_PALETTE} size={size} />;
+const HeartEmpty = ({ size = 24 }) => <PixelGrid rows={HEART_EMPTY_ROWS} palette={HEART_EMPTY_PALETTE} size={size} />;
+
+const BIOMES = {
+  grass:  { label: 'Grass',  rows: ['gGgggGgg','ggggggGg','gggGggGg','dddddddd','dDdDdDdD','DdDdDdDd','dDdDdDdD','DdDdDdDd'], palette: { g:'#6BBF59', G:'#4FA340', d:'#8B5A2B', D:'#5C3A1E' } },
+  planks: { label: 'Planks', rows: ['pPpppPpp','pppPppPp','pPpppppP','KKKKKKKK','PpppPppp','pPpppPpp','pppPpppP','KKKKKKKK'], palette: { p:'#C68642', P:'#A06A2E', K:'#5C3A1E' } },
+  stone:  { label: 'Stone',  rows: ['ssSssssS','SssssSss','ssSsssss','ssssSsss','sSssssss','sssssSss','SssSssss','ssssssSs'], palette: { s:'#A8A8A8', S:'#737373' } },
+  cobble: { label: 'Cobble', rows: ['KccCcKKc','KccCcccK','CCcKKccc','cccKccCc','cKccccKc','KKcccCcc','ccCKKccK','cccccKKc'], palette: { c:'#9A9A9A', C:'#787878', K:'#454545' } },
+  sand:   { label: 'Sand',   rows: ['aaAaaaaa','aaaaaAaa','aAaaaaaa','aaaaAaaa','aaaAaaaa','aaaaaaaA','aaAaaaaa','aaaaaaAa'], palette: { a:'#E6CFA0', A:'#C2A878' } },
+  dirt:   { label: 'Dirt',   rows: ['dDddddDd','ddddDddd','dDdddddd','dddddDdd','dddDdddd','DdddddDd','ddddDddd','dDdddddd'], palette: { d:'#8B5A2B', D:'#5C3A1E' } },
+  bricks: { label: 'Bricks', rows: ['bbbbMbbb','bbbbMbbb','bbbbMbbb','MMMMMMMM','bbMbbbbb','bbMbbbbb','bbMbbbbb','MMMMMMMM'], palette: { b:'#B25940', M:'#E6D4B8' } },
+  emerald:{ label: 'Emerald',rows: ['KKKKKKKK','KeEEeeEK','KEeeEeeK','KeEEeeEK','KeeEeEeK','KEeeEeEK','KeEEeeeK','KKKKKKKK'], palette: { e:'#3EC97B', E:'#1F8A50', K:'#0E5A33' } },
+  netherrack:{ label:'Hellrock', rows: ['nNnnnNnn','NnnNnnnN','nNnnnnnn','nnnnNnnn','nnNnnnnn','NnnnnNnn','nnnNnnnN','nNnnnnnn'], palette: { n:'#7A2A22', N:'#4A130E' } },
+};
+const tilesA = ['grass', 'planks', 'stone', 'sand', 'cobble', 'bricks', 'dirt', 'planks', 'grass'];
+
+const BiomeTile = ({ kind = 'grass', size = 96, style = {} }) => {
+  const b = BIOMES[kind] || BIOMES.grass;
+  return <PixelGrid rows={b.rows} palette={b.palette} size={size} style={style} />;
+};
+
+const CLOUD_ROWS = ['..ccccc...','.ccccccc..','cccccccccc','.cccccccc.','..ccccc...'];
+const Cloud = ({ size = 80, color = '#FFFFFF' }) => <PixelGrid rows={CLOUD_ROWS} palette={{ c: color }} size={size} />;
+
+const TREE_ROWS = ['..LLLLLL..','.LLLLLLLL.','LLLLDLLLLL','LLLLLDLLLL','.LLLDLLLL.','..LLLLLL..','....TT....','....TT....','....TT....','....TT....'];
+const Tree = ({ size = 64 }) => <PixelGrid rows={TREE_ROWS} palette={{ L:'#3E7A2E', D:'#2D5A1E', T:'#5C3A1E' }} size={size} />;
+
+/* ── Sky background (Sunny Plains) ──────────────────────────────────────── */
+const SkyBackground = ({ children, style = {} }) => (
+  <div style={{
+    position: 'absolute', inset: 0,
+    background: 'linear-gradient(180deg, #6FB7F0 0%, #9CCEF5 55%, #B8E0FF 100%)',
+    overflow: 'hidden', ...style,
+  }}>
+    <div style={{ position: 'absolute', top: 26, right: 36, width: 56, height: 56,
+      background: '#FFE066', boxShadow: '0 0 0 6px #FFD33B, 0 0 0 12px rgba(255,211,59,0.35)',
+      imageRendering: 'pixelated' }} />
+    <div style={{ position: 'absolute', top: 60, left: '12%', opacity: 0.95 }}><Cloud size={96} /></div>
+    <div style={{ position: 'absolute', top: 110, left: '62%', opacity: 0.9 }}><Cloud size={70} /></div>
+    <div style={{ position: 'absolute', top: 30, left: '42%', opacity: 0.85 }}><Cloud size={54} /></div>
+    <div style={{ position: 'absolute', bottom: 70, left: 0, right: 0, height: 60,
+      background: 'linear-gradient(180deg, #87B86E 0%, #6A9C58 100%)',
+      clipPath: 'polygon(0% 60%, 10% 30%, 18% 50%, 28% 20%, 40% 45%, 52% 25%, 64% 50%, 76% 30%, 88% 55%, 100% 35%, 100% 100%, 0% 100%)' }} />
+    <div style={{ position: 'absolute', bottom: 70, left: '8%' }}><Tree size={42} /></div>
+    <div style={{ position: 'absolute', bottom: 72, left: '28%' }}><Tree size={36} /></div>
+    <div style={{ position: 'absolute', bottom: 70, right: '12%' }}><Tree size={48} /></div>
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80,
+      backgroundImage: 'linear-gradient(180deg, #6BBF59 0%, #6BBF59 18%, #8B5A2B 18%, #5C3A1E 100%)' }} />
+    {children}
+  </div>
+);
+
+/* ── HUD + board cell + fireworks ──────────────────────────────────────── */
+const HeartsRow = ({ filled = 3, total = 3, size = 22 }) => (
+  <div className="heart-row">
+    {Array.from({ length: total }).map((_, i) =>
+      i < filled ? <Heart key={i} size={size} /> : <HeartEmpty key={i} size={size} />)}
+  </div>
+);
+
+const PlayerHUD = ({ name, icon, hearts, score, active }) => (
+  <div className="mc-panel" style={{
+    width: 240,
+    outline: active ? '4px solid #F2C744' : '4px solid transparent',
+    outlineOffset: 2, transition: 'outline-color 150ms',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+      <div style={{ width: 52, height: 52, background: '#3A3A3A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #555' }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="pixel-h2" style={{ fontSize: 11, color: '#1A1722', overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+        <div className="label-mono" style={{ color: '#5C5468', marginTop: 4 }}>
+          SCORE · {String(score).padStart(2, '0')}
+        </div>
+      </div>
+    </div>
+    <HeartsRow filled={hearts} total={START_HEARTS} />
+  </div>
+);
+
+const TurnIndicator = ({ icon, name }) => (
+  <div className="mc-panel" style={{ padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+    <span className="pixel-h2" style={{ fontSize: 10, color: '#5C5468' }}>TURN</span>
+    <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+    <span className="pixel-h2" style={{ fontSize: 12, color: '#1A1722', maxWidth: 140,
+      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+  </div>
+);
+
+const BoardCell = ({ tile, mark, winning, size = 110, onClick, disabled }) => (
+  <div onClick={disabled ? undefined : onClick} style={{
+    position: 'relative', width: size, height: size,
+    cursor: disabled || mark ? 'default' : 'pointer',
+    animation: winning ? 'shake 600ms infinite' : undefined,
+    borderTop: '4px solid rgba(255,255,255,0.45)',
+    borderLeft: '4px solid rgba(255,255,255,0.45)',
+    borderRight: '4px solid rgba(0,0,0,0.45)',
+    borderBottom: '4px solid rgba(0,0,0,0.45)',
+    overflow: 'hidden', background: '#222',
+  }}>
+    <BiomeTile kind={tile} size={size - 8} style={{ position: 'absolute', inset: 0 }} />
+    {winning && (
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(242,199,68,0.35)',
+        boxShadow: 'inset 0 0 0 3px rgba(242,199,68,0.9)' }} />
+    )}
+    {mark && (
+      <div className="tile-mark" style={{ position: 'absolute', inset: 0, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        filter: 'drop-shadow(3px 3px 0 rgba(0,0,0,0.4))' }}>
+        {mark === 'P' ? <Pickaxe size={size - 30} /> : <Sword size={size - 30} />}
+      </div>
+    )}
+  </div>
+);
+
+const Burst = ({ x, y, color, delay }) => {
+  const N = 14;
+  return (
+    <div style={{ position: 'absolute', top: `${y}%`, left: `${x}%`, width: 0, height: 0 }}>
+      {Array.from({ length: N }).map((_, i) => {
+        const a = (i / N) * Math.PI * 2;
+        return (
+          <div key={i} className="fw-particle" style={{
+            left: 0, top: 0, background: color, boxShadow: `0 0 0 2px ${color}66`,
+            transform: `translate(${Math.cos(a) * 60}px, ${Math.sin(a) * 60}px)`,
+            animation: `fwBoom 1.6s ${delay}s infinite`,
+          }} />
+        );
+      })}
+      <div style={{ position: 'absolute', left: -4, top: -4, width: 8, height: 8,
+        background: '#FFFFFF', boxShadow: `0 0 0 4px ${color}`,
+        animation: `fwBoom 1.6s ${delay}s infinite` }} />
+    </div>
+  );
+};
+
+const Fireworks = () => {
+  const bursts = [
+    { x: 18, y: 22, color: '#F2C744', delay: 0 },
+    { x: 78, y: 32, color: '#D33C3C', delay: 0.4 },
+    { x: 35, y: 70, color: '#2EA86C', delay: 0.8 },
+    { x: 65, y: 65, color: '#6FB7F0', delay: 1.2 },
+    { x: 50, y: 25, color: '#E07621', delay: 1.6 },
+  ];
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 4 }}>
+      {bursts.map((b, i) => <Burst key={i} {...b} />)}
+    </div>
+  );
+};
+
+const Toggle = ({ options, value, onChange }) => (
+  <div className="toggle">
+    {options.map((o) => (
+      <button key={o.value} className={value === o.value ? 'active' : ''} onClick={() => onChange(o.value)}>
+        {o.label}
+      </button>
+    ))}
+  </div>
+);
+
+/* ── Game logic ────────────────────────────────────────────────────────── */
+const LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6],
+];
+
+function computeWin(b) {
+  for (const l of LINES) {
+    const [a, b1, c] = l;
+    if (b[a] && b[a] === b[b1] && b[a] === b[c]) return l;
+  }
+  return null;
+}
+const starterFor = (round) => (round % 2 === 1 ? 'P' : 'S');
+const isFull = (b) => b.every(Boolean);
+const emptyCells = (b) => b.reduce((a, v, i) => (v ? a : (a.push(i), a)), []);
+
+// CPU plays 'S'. Returns chosen cell index.
+function cpuMove(board, difficulty) {
+  const empties = emptyCells(board);
+  if (!empties.length) return -1;
+
+  if (difficulty === 'easy') {
+    return empties[Math.floor(Math.random() * empties.length)];
+  }
+
+  const findFor = (mark) => {
+    for (const i of empties) {
+      const t = board.slice(); t[i] = mark;
+      if (computeWin(t)) return i;
+    }
+    return -1;
+  };
+
+  if (difficulty === 'medium') {
+    const win = findFor('S'); if (win !== -1) return win;       // take the win
+    const block = findFor('P'); if (block !== -1) return block;  // block opponent
+    if (board[4] == null) return 4;                              // center
+    const corners = [0, 2, 6, 8].filter((i) => board[i] == null);
+    if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+    return empties[Math.floor(Math.random() * empties.length)];
+  }
+
+  // hard — minimax (S maximizing, P minimizing)
+  const score = (b, depth) => {
+    const w = computeWin(b);
+    if (w) return b[w[0]] === 'S' ? 10 - depth : depth - 10;
+    if (isFull(b)) return 0;
+    return null;
+  };
+  const minimax = (b, turn, depth) => {
+    const s = score(b, depth);
+    if (s !== null) return { score: s };
+    let best = turn === 'S' ? { score: -Infinity } : { score: Infinity };
+    for (const i of emptyCells(b)) {
+      const t = b.slice(); t[i] = turn;
+      const r = minimax(t, turn === 'S' ? 'P' : 'S', depth + 1);
+      if (turn === 'S' ? r.score > best.score : r.score < best.score) best = { score: r.score, move: i };
+    }
+    return best;
+  };
+  return minimax(board, 'S', 0).move;
+}
+
+/* ── Sound (Web Audio, toggleable) ─────────────────────────────────────── */
+function makeSound() {
+  let ctx = null;
+  const ensure = () => {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  };
+  const blip = (freq, dur, type = 'square', vol = 0.12) => {
+    const c = ensure();
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + dur);
+  };
+  return {
+    click: () => blip(660, 0.06, 'square', 0.08),
+    place: () => { blip(330, 0.08); setTimeout(() => blip(495, 0.09), 60); },
+    deny:  () => blip(140, 0.14, 'sawtooth', 0.09),
+    win:   () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.18, 'square', 0.12), i * 110)),
+    draw:  () => { blip(392, 0.16); setTimeout(() => blip(294, 0.2), 150); },
+  };
+}
+
+/* ── Tweaks ────────────────────────────────────────────────────────────── */
+const TweaksContext = createContext(null);
+const useTweaks = () => useContext(TweaksContext);
+
+const TweaksPanel = ({ t, set }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className="mc-btn secondary tweaks-toggle" style={{ fontSize: 9, padding: '8px 12px' }}
+        onClick={() => setOpen((o) => !o)}>
+        ⚙ TWEAKS
+      </button>
+      {open && (
+        <div className="tweaks-panel">
+          <div className="tw-section">BOARD</div>
+          <label className="tw-row">Tile material</label>
+          <select value={t.material} onChange={(e) => set('material', e.target.value)}>
+            <option value="mixed">Mixed biomes</option>
+            <option value="grass">All grass</option>
+            <option value="stone">All stone</option>
+            <option value="cobble">All cobblestone</option>
+            <option value="planks">All planks</option>
+            <option value="bricks">All bricks</option>
+            <option value="sand">All sand</option>
+            <option value="emerald">All emerald</option>
+            <option value="netherrack">All hellrock</option>
+          </select>
+          <label className="tw-row" style={{ marginTop: 12 }}>
+            Pixel scale · {t.scale.toFixed(2)}×
+          </label>
+          <input type="range" min={0.85} max={1.25} step={0.05} value={t.scale}
+            onChange={(e) => set('scale', Math.round(parseFloat(e.target.value) * 100) / 100)} />
+
+          <div className="tw-section">PLAYER ICONS</div>
+          <label className="tw-row">Player 1</label>
+          <div className="tw-radio">
+            {['pickaxe', 'sword'].map((v) => (
+              <div key={v} className={`tw-chip ${t.p1icon === v ? 'on' : ''}`}
+                onClick={() => set('p1icon', v)}>{v.toUpperCase()}</div>
+            ))}
+          </div>
+
+          <div className="tw-section">EFFECTS</div>
+          <div className="tw-toggle">
+            {[['on', true], ['off', false]].map(([lbl, v]) => (
+              <div key={lbl} className={`tw-chip ${t.fx === v ? 'on' : ''}`}
+                onClick={() => set('fx', v)}>WIN FX {lbl.toUpperCase()}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+/* ── Screens ───────────────────────────────────────────────────────────── */
+const TitleScreen = ({ onStart, soundOn, onToggleSound }) => (
+  <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, overflow: 'hidden' }}>
+    <SkyBackground />
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 28, paddingBottom: 40 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <h1 className="pixel-h1" style={{ fontSize: 52, color: '#FFFFFF',
+          textShadow: '6px 6px 0 #2D5A1E, 12px 12px 0 rgba(0,0,0,0.25)', letterSpacing: 3 }}>
+          TIC&nbsp;TAC&nbsp;TOE
+        </h1>
+        <div className="pixel-h2" style={{ fontSize: 14, color: '#3E7A2E',
+          background: '#FFFFFFCC', padding: '6px 14px', border: '3px solid #3E7A2E' }}>
+          A&nbsp;BLOCKY&nbsp;DUEL
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 90, height: 90, background: '#FFF', border: '4px solid #5C3A1E',
+            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Pickaxe size={68} />
+          </div>
+          <span className="pixel-h2" style={{ fontSize: 10, color: '#FFF', textShadow: '2px 2px 0 #2D5A1E' }}>PLAYER&nbsp;1</span>
+        </div>
+        <div className="pixel-h1" style={{ fontSize: 32, color: '#FFE066', textShadow: '4px 4px 0 #2D5A1E' }}>VS</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 90, height: 90, background: '#FFF', border: '4px solid #5C3A1E',
+            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sword size={68} />
+          </div>
+          <span className="pixel-h2" style={{ fontSize: 10, color: '#FFF', textShadow: '2px 2px 0 #2D5A1E' }}>PLAYER&nbsp;2</span>
+        </div>
+      </div>
+
+      <button className="mc-btn" style={{ marginTop: 8, fontSize: 14, padding: '16px 32px' }} onClick={onStart}>
+        ▶&nbsp;&nbsp;START&nbsp;GAME
+      </button>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button className="mc-btn secondary" style={{ fontSize: 10, padding: '10px 14px' }} onClick={onStart}>
+          HOW&nbsp;TO&nbsp;PLAY
+        </button>
+        <button className="mc-btn secondary" style={{ fontSize: 10, padding: '10px 14px' }} onClick={onToggleSound}>
+          ♪&nbsp;SOUND&nbsp;{soundOn ? 'ON' : 'OFF'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const PlayerCard = ({ role, icon, tag, value, onChange, disabled }) => (
+  <div className="mc-panel" style={{ width: 220, padding: 14, textAlign: 'center' }}>
+    <div className="pixel-h2" style={{ fontSize: 9, color: '#5C5468', marginBottom: 8 }}>{role}</div>
+    <div style={{ width: 88, height: 88, margin: '0 auto 10px', background: '#3A3A3A',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #5C3A1E' }}>
+      {icon}
+    </div>
+    <input className="mc-input light" value={value} disabled={disabled} maxLength={12}
+      onChange={(e) => onChange(e.target.value)} style={{ marginBottom: 8, textAlign: 'center' }} />
+    <div className="pixel-h2" style={{ fontSize: 9, color: '#FFF', background: '#3E7A2E',
+      padding: '6px 8px', display: 'inline-block' }}>⚒&nbsp;&nbsp;{tag}</div>
+  </div>
+);
+
+const PlayerSelect = ({ settings, setSettings, onBack, onBegin }) => {
+  const { mode, difficulty, names } = settings;
+  const upd = (patch) => setSettings({ ...settings, ...patch });
+  return (
+    <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, overflow: 'hidden' }}>
+      <SkyBackground />
+      <div style={{ position: 'absolute', inset: 0, padding: 24, display: 'flex',
+        flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <h2 className="pixel-h1" style={{ fontSize: 26, color: '#FFFFFF',
+          textShadow: '4px 4px 0 #2D5A1E', marginTop: 8 }}>
+          CHOOSE&nbsp;YOUR&nbsp;CREW
+        </h2>
+
+        <div className="mc-panel" style={{ padding: 10, display: 'flex', gap: 8 }}>
+          <button className={`mc-btn ${mode === 'pvp' ? '' : 'secondary'}`}
+            style={{ fontSize: 10, padding: '8px 14px' }}
+            onClick={() => upd({ mode: 'pvp', names: { ...names, S: names.S === 'CPU' ? 'ALEX' : names.S } })}>
+            2&nbsp;PLAYERS
+          </button>
+          <button className={`mc-btn ${mode === 'cpu' ? '' : 'secondary'}`}
+            style={{ fontSize: 10, padding: '8px 14px' }}
+            onClick={() => upd({ mode: 'cpu', names: { ...names, S: 'CPU' } })}>
+            VS&nbsp;CPU
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 18 }}>
+          <PlayerCard role="PLAYER 1" icon={<Pickaxe size={52} />} tag="PICKAXE"
+            value={names.P} onChange={(v) => upd({ names: { ...names, P: v } })} />
+          <PlayerCard role={mode === 'cpu' ? 'COMPUTER' : 'PLAYER 2'} icon={<Sword size={52} />} tag="SWORD"
+            value={mode === 'cpu' ? 'CPU' : names.S} disabled={mode === 'cpu'}
+            onChange={(v) => upd({ names: { ...names, S: v } })} />
+        </div>
+
+        <div className="mc-panel" style={{ padding: 12, display: 'flex', alignItems: 'center',
+          gap: 12, opacity: mode === 'cpu' ? 1 : 0.45 }}>
+          <span className="pixel-h2" style={{ fontSize: 10, color: '#1A1722' }}>DIFFICULTY</span>
+          <Toggle
+            options={[{ value: 'easy', label: 'EASY' }, { value: 'medium', label: 'MEDIUM' }, { value: 'hard', label: 'HARD' }]}
+            value={difficulty}
+            onChange={(v) => mode === 'cpu' && upd({ difficulty: v })} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+          <button className="mc-btn secondary" style={{ fontSize: 11, padding: '12px 18px' }} onClick={onBack}>
+            ◀&nbsp;&nbsp;BACK
+          </button>
+          <button className="mc-btn" style={{ fontSize: 12, padding: '12px 22px' }} onClick={onBegin}>
+            ▶&nbsp;&nbsp;BEGIN&nbsp;DUEL
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GameBoard = ({ settings, match, dispatch, onQuit, soundOn, onToggleSound }) => {
+  const tw = useTweaks();
+  const { board, turn, scores, hearts, round, winLine, banner } = match;
+  const { mode, names } = settings;
+
+  const tilesForBoard = tw.material === 'mixed' ? tilesA : Array(9).fill(tw.material);
+  const cellSize = Math.round(112 * tw.scale);
+  const P1 = tw.p1icon === 'sword' ? Sword : Pickaxe;
+  const P2 = tw.p1icon === 'sword' ? Pickaxe : Sword;
+  const displayMark = (m) =>
+    m === 'P' ? (tw.p1icon === 'sword' ? 'S' : 'P')
+    : m === 'S' ? (tw.p1icon === 'sword' ? 'P' : 'S') : m;
+
+  const locked = !!winLine || !!banner;
+  const cpuThinking = mode === 'cpu' && turn === 'S' && !locked;
+
+  return (
+    <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, overflow: 'hidden' }}>
+      <SkyBackground />
+      {tw.fx && winLine && <Fireworks />}
+      <div style={{ position: 'absolute', inset: 0, padding: '20px 28px', display: 'flex',
+        flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <PlayerHUD name={names.P} icon={<P1 size={36} />} hearts={hearts.P} score={scores.P} active={turn === 'P' && !locked} />
+          <TurnIndicator
+            icon={turn === 'P' ? <P1 size={28} /> : <P2 size={28} />}
+            name={cpuThinking ? 'CPU…' : (turn === 'P' ? names.P : names.S)} />
+          <PlayerHUD name={names.S} icon={<P2 size={36} />} hearts={hearts.S} score={scores.S} active={turn === 'S' && !locked} />
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div style={{ padding: 16, background: '#5C3A1E', border: '5px solid #2D1A0E',
+            boxShadow: '8px 8px 0 rgba(0,0,0,0.25)', display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: 8 }}>
+            {board.map((m, i) => (
+              <BoardCell key={i} tile={tilesForBoard[i]} mark={displayMark(m)}
+                winning={tw.fx && winLine && winLine.includes(i)}
+                size={cellSize} disabled={locked || cpuThinking}
+                onClick={() => dispatch({ type: 'play', cell: i })} />
+            ))}
+          </div>
+          {banner && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', zIndex: 6, pointerEvents: 'none' }}>
+              <div className="pixel-h1" style={{
+                fontSize: 30, color: banner.kind === 'draw' ? '#FFFFFF' : '#FFE066',
+                background: banner.kind === 'draw' ? '#5C5468' : '#3E7A2E',
+                padding: '16px 28px', border: '4px solid rgba(0,0,0,0.35)',
+                textShadow: '4px 4px 0 rgba(0,0,0,0.4)',
+                animation: 'bannerIn 320ms cubic-bezier(.2,1.4,.4,1) both' }}>
+                {banner.text}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="mc-btn warm" style={{ fontSize: 10, padding: '10px 14px' }}
+              disabled={locked} onClick={() => dispatch({ type: 'restartRound' })}>
+              ⟲&nbsp;&nbsp;RESTART
+            </button>
+            <button className="mc-btn secondary" style={{ fontSize: 10, padding: '10px 14px' }} onClick={onToggleSound}>
+              ♪&nbsp;&nbsp;{soundOn ? 'SOUND' : 'MUTED'}
+            </button>
+          </div>
+          <div className="mc-panel" style={{ padding: '6px 14px' }}>
+            <span className="pixel-h2" style={{ fontSize: 10, color: '#1A1722' }}>
+              ROUND&nbsp;{round}&nbsp;/&nbsp;{BEST_OF}
+            </span>
+          </div>
+          <button className="mc-btn danger" style={{ fontSize: 10, padding: '10px 14px' }} onClick={onQuit}>
+            ✕&nbsp;&nbsp;QUIT
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WinScreen = ({ settings, match, onPlayAgain, onMenu }) => {
+  const tw = useTweaks();
+  const { scores, finalResult } = match;
+  const { names } = settings;
+  const P1 = tw.p1icon === 'sword' ? Sword : Pickaxe;
+  const P2 = tw.p1icon === 'sword' ? Pickaxe : Sword;
+  const winnerIsP = finalResult.winner === 'P';
+  const WinIcon = winnerIsP ? P1 : P2;
+  const winnerName = winnerIsP ? names.P : names.S;
+
+  return (
+    <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, overflow: 'hidden' }}>
+      <SkyBackground />
+      {tw.fx && <Fireworks />}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex',
+        flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+        <div className="pixel-h2" style={{ fontSize: 11, color: '#FFF', background: '#3E7A2E',
+          padding: '6px 14px', textShadow: '2px 2px 0 rgba(0,0,0,0.35)' }}>
+          MATCH&nbsp;COMPLETE
+        </div>
+        <h1 className="pixel-h1" style={{ fontSize: 48, color: '#FFE066',
+          textShadow: '6px 6px 0 #5C3A1E, 10px 10px 0 rgba(0,0,0,0.3)' }}>
+          VICTORY!
+        </h1>
+
+        <div className="mc-panel" style={{ padding: '18px 28px', display: 'flex', alignItems: 'center', gap: 18 }}>
+          <div style={{ width: 70, height: 70, background: '#FFF', border: '3px solid #5C3A1E',
+            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <WinIcon size={54} />
+          </div>
+          <div>
+            <div className="pixel-h2" style={{ fontSize: 13, color: '#1A1722' }}>
+              {winnerName}&nbsp;WINS
+            </div>
+            <div className="label-mono" style={{ color: '#5C5468', marginTop: 6 }}>
+              {finalResult.summary}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <HeartsRow filled={winnerIsP ? match.hearts.P : match.hearts.S} total={START_HEARTS} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 18 }}>
+          <div className="mc-panel" style={{ padding: '10px 16px', textAlign: 'center' }}>
+            <P1 size={28} />
+            <div className="pixel-h2" style={{ fontSize: 10, color: '#1A1722', marginTop: 4 }}>{names.P}</div>
+            <div className="pixel-h1" style={{ fontSize: 22, color: '#3E7A2E', marginTop: 6 }}>{scores.P}</div>
+          </div>
+          <div className="mc-panel" style={{ padding: '10px 16px', textAlign: 'center' }}>
+            <P2 size={28} />
+            <div className="pixel-h2" style={{ fontSize: 10, color: '#1A1722', marginTop: 4 }}>{names.S}</div>
+            <div className="pixel-h1" style={{ fontSize: 22, color: '#5C5468', marginTop: 6 }}>{scores.S}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="mc-btn" style={{ fontSize: 12, padding: '14px 22px' }} onClick={onPlayAgain}>
+            ▶&nbsp;&nbsp;PLAY&nbsp;AGAIN
+          </button>
+          <button className="mc-btn secondary" style={{ fontSize: 11, padding: '14px 18px' }} onClick={onMenu}>
+            ◀&nbsp;&nbsp;MAIN&nbsp;MENU
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Match state machine ───────────────────────────────────────────────── */
+const freshMatch = () => ({
+  board: Array(9).fill(null),
+  turn: 'P',
+  scores: { P: 0, S: 0 },
+  hearts: { P: START_HEARTS, S: START_HEARTS },
+  round: 1,
+  winLine: null,
+  banner: null,        // { kind:'win'|'draw', text }
+  finalResult: null,   // { winner, summary }
+  moveCount: 0,
+});
+
+function matchReducer(state, action) {
+  switch (action.type) {
+    case 'reset':
+      return freshMatch();
+
+    case 'restartRound':
+      if (state.winLine || state.banner) return state;
+      return { ...state, board: Array(9).fill(null), turn: starterFor(state.round), winLine: null, moveCount: 0 };
+
+    case 'play': {
+      const { cell } = action;
+      if (state.board[cell] || state.winLine || state.banner) return state;
+      const board = state.board.slice();
+      board[cell] = state.turn;
+      const moveCount = state.moveCount + 1;
+      const line = computeWin(board);
+
+      if (line) {
+        const winner = board[line[0]];
+        const loser = winner === 'P' ? 'S' : 'P';
+        const scores = { ...state.scores, [winner]: state.scores[winner] + 1 };
+        const hearts = { ...state.hearts, [loser]: state.hearts[loser] - 1 };
+        const orient =
+          line[0] % 3 === 0 && line[1] === line[0] + 1 ? 'ROW'
+          : line[1] === line[0] + 3 ? 'COLUMN' : 'DIAGONAL';
+        const matchOver = scores[winner] >= Math.ceil(BEST_OF / 2) || hearts[loser] <= 0;
+        return {
+          ...state, board, scores, hearts, winLine: line, moveCount,
+          banner: matchOver ? null : { kind: 'win', text: `${winner === 'P' ? 'P1' : 'P2'} WINS THE ROUND` },
+          finalResult: matchOver
+            ? { winner, summary: `3 IN A ROW · ${orient} · ${moveCount} MOVES` }
+            : null,
+        };
+      }
+
+      if (isFull(board)) {
+        return { ...state, board, moveCount, banner: { kind: 'draw', text: 'DRAW — REPLAY' } };
+      }
+
+      const turn = state.turn === 'P' ? 'S' : 'P';
+      return { ...state, board, turn, moveCount };
+    }
+
+    case 'nextRound': {
+      const round = state.banner && state.banner.kind === 'win' ? state.round + 1 : state.round;
+      return {
+        ...state, board: Array(9).fill(null), turn: starterFor(round),
+        winLine: null, banner: null, round,
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+/* ── App ───────────────────────────────────────────────────────────────── */
+function App() {
+  const [screen, setScreen] = useState('title');           // title | select | playing | win
+  const [settings, setSettings] = useState({
+    mode: 'pvp', difficulty: 'medium', names: { P: 'STEVE', S: 'ALEX' },
+  });
+  const [match, dispatch] = React.useReducer(matchReducer, undefined, freshMatch);
+  const [tweaksState, setTweaksState] = useState({
+    material: 'mixed', scale: 1, fx: true, p1icon: 'pickaxe',
+  });
+  const setTweak = (k, v) => setTweaksState((s) => ({ ...s, [k]: v }));
+
+  const [soundOn, setSoundOn] = useState(true);
+  const sfx = useRef(null);
+  if (!sfx.current) sfx.current = makeSound();
+  const play = (name) => { if (soundOn) try { sfx.current[name](); } catch (e) {} };
+
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setScale(Math.min(
+      window.innerWidth / STAGE_W, window.innerHeight / STAGE_H, 1.4));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  // Round / match progression after a win or draw.
+  useEffect(() => {
+    if (screen !== 'playing') return;
+    if (match.finalResult) {
+      play('win');
+      const id = setTimeout(() => setScreen('win'), 1800);
+      return () => clearTimeout(id);
+    }
+    if (match.banner) {
+      play(match.banner.kind === 'draw' ? 'draw' : 'win');
+      const id = setTimeout(() => dispatch({ type: 'nextRound' }), 1800);
+      return () => clearTimeout(id);
+    }
+  }, [match.banner, match.finalResult, screen]);
+
+  // CPU turn.
+  useEffect(() => {
+    if (screen !== 'playing') return;
+    if (settings.mode !== 'cpu') return;
+    if (match.turn !== 'S' || match.winLine || match.banner) return;
+    const id = setTimeout(() => {
+      const i = cpuMove(match.board, settings.difficulty);
+      if (i >= 0) { play('place'); dispatch({ type: 'play', cell: i }); }
+    }, 480);
+    return () => clearTimeout(id);
+  }, [match.turn, match.board, match.winLine, match.banner, screen, settings.mode, settings.difficulty]);
+
+  const startMatch = () => { dispatch({ type: 'reset' }); setScreen('playing'); };
+
+  const handleCell = (action) => {
+    if (action.type === 'play') {
+      if (settings.mode === 'cpu' && match.turn === 'S') return;
+      if (match.board[action.cell] || match.winLine || match.banner) { play('deny'); return; }
+      play('place');
+    }
+    if (action.type === 'restartRound') play('click');
+    dispatch(action);
+  };
+
+  // Keyboard: 1–9 place, R restart round, ESC main menu.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setScreen('title'); return; }
+      if (screen !== 'playing') return;
+      if (e.key === 'r' || e.key === 'R') { handleCell({ type: 'restartRound' }); return; }
+      if (e.key >= '1' && e.key <= '9') {
+        if (settings.mode === 'cpu' && match.turn === 'S') return;
+        handleCell({ type: 'play', cell: parseInt(e.key, 10) - 1 });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [screen, match.board, match.turn, match.winLine, match.banner, settings.mode]);
+
+  let view;
+  if (screen === 'title')
+    view = <TitleScreen onStart={() => setScreen('select')} soundOn={soundOn}
+      onToggleSound={() => setSoundOn((s) => !s)} />;
+  else if (screen === 'select')
+    view = <PlayerSelect settings={settings} setSettings={setSettings}
+      onBack={() => setScreen('title')} onBegin={startMatch} />;
+  else if (screen === 'playing')
+    view = <GameBoard settings={settings} match={match} dispatch={handleCell}
+      onQuit={() => setScreen('title')} soundOn={soundOn}
+      onToggleSound={() => setSoundOn((s) => !s)} />;
+  else
+    view = <WinScreen settings={settings} match={match}
+      onPlayAgain={startMatch} onMenu={() => setScreen('title')} />;
+
+  return (
+    <TweaksContext.Provider value={tweaksState}>
+      <div id="stage-wrap">
+        <div id="stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
+          {view}
+        </div>
+      </div>
+      <TweaksPanel t={tweaksState} set={setTweak} />
+    </TweaksContext.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
