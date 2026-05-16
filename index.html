@@ -229,10 +229,14 @@
       background:
         linear-gradient(180deg, #6FB7F0 0%, #9CCEF5 55%, #B8E0FF 100%);
     }
+    /* Sizer occupies the SCALED footprint so flex centering never clips. */
+    #stage-sizer { position: relative; flex: 0 0 auto; }
     #stage {
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
       overflow: hidden;
-      transform-origin: center center;
+      transform-origin: top left;
       box-shadow: 0 24px 60px rgba(0,0,0,0.35);
     }
 
@@ -1036,13 +1040,23 @@ function App() {
   if (!sfx.current) sfx.current = makeSound();
   const play = (name) => { if (soundOn) try { sfx.current[name](); } catch (e) {} };
 
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.5);
   useEffect(() => {
-    const fit = () => setScale(Math.min(
-      window.innerWidth / STAGE_W, window.innerHeight / STAGE_H, 1.4));
+    const vp = window.visualViewport;
+    const fit = () => {
+      const vw = (vp && vp.width) || window.innerWidth;
+      const vh = (vp && vp.height) || window.innerHeight;
+      setScale(Math.min(vw / STAGE_W, vh / STAGE_H, 1.4));
+    };
     fit();
     window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    window.addEventListener('orientationchange', fit);
+    if (vp) vp.addEventListener('resize', fit);
+    return () => {
+      window.removeEventListener('resize', fit);
+      window.removeEventListener('orientationchange', fit);
+      if (vp) vp.removeEventListener('resize', fit);
+    };
   }, []);
 
   // Round / match progression after a win or draw.
@@ -1117,8 +1131,10 @@ function App() {
   return (
     <TweaksContext.Provider value={tweaksState}>
       <div id="stage-wrap">
-        <div id="stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
-          {view}
+        <div id="stage-sizer" style={{ width: STAGE_W * scale, height: STAGE_H * scale }}>
+          <div id="stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
+            {view}
+          </div>
         </div>
       </div>
       <TweaksPanel t={tweaksState} set={setTweak} />
